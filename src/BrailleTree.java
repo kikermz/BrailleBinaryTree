@@ -6,11 +6,12 @@ import java.util.Scanner;
 
 /**
  * This class stores braille characters in a binary tree. 
- * @author Catie Baker and YOUR NAME HERE
+ * @author Catie Baker and Enrique Loza
  *
  */
 public class BrailleTree {
 	
+	private BrailleNode root;
 
 	/**
 	 * Creates the Braille tree from the alphabet in the provided file.
@@ -25,7 +26,18 @@ public class BrailleTree {
 	 * @param filename the name of the file that stores the encoding mapping
 	 */
 	public BrailleTree(String filename) {
-
+		try (Scanner scanner = new Scanner(new File(filename))) {
+			int numDots = Integer.parseInt(scanner.nextLine().trim()); // Read number of dots.
+			add("0".repeat(numDots), " "); // Add space character for all-zeros encoding.
+			while (scanner.hasNextLine()) {
+				String[] parts = scanner.nextLine().split(" ", 2);
+				if (parts.length == 2) {
+					add(parts[0], parts[1]);
+				}
+			}
+		} catch (FileNotFoundException e) {
+			System.err.println("File not found: " + filename);
+		}
 	}
 	
 	/**
@@ -64,7 +76,7 @@ public class BrailleTree {
 	 */
 	public String getText(String binary) {
 		//must implement using recursion with the helper method below
-
+		return getText(binary, root);
 	}
 	
 	/**
@@ -74,7 +86,17 @@ public class BrailleTree {
 	 * empty string if there is no such encoding in the tree
 	 */
 	private String getText(String binary, BrailleNode curr) {
-
+		if (curr == null) {
+			return "";
+		}
+		if (binary.isEmpty()) {
+			return curr.getText();
+		}
+		if (binary.charAt(0) == '0') {
+			return getText(binary.substring(1), curr.getLeft());
+		} else {
+			return getText(binary.substring(1), curr.getRight());
+		}
 	}
 	
 	/**
@@ -98,6 +120,17 @@ public class BrailleTree {
 	 * the empty string if that text is not in the tree.
 	 */
 	private String getBraille(String text, BrailleNode curr, String path) {
+		if (curr == null) {
+			return "";
+		}
+		if (curr.getText().equals(text)) {
+			return path;
+		}
+		String leftResult = getBraille(text, curr.getLeft(), path + "0");
+		if (!leftResult.isEmpty()) {
+			return leftResult;
+		}
+		return getBraille(text, curr.getRight(), path + "1");
 		
 	}
 	
@@ -108,7 +141,16 @@ public class BrailleTree {
 	 * @param outfile the file to write the translation to
 	 */
 	public void translateFile(String infile, String outfile) {
-	
+		try (Scanner scanner = new Scanner(new File(infile));
+		FileWriter writer = new FileWriter(outfile)) {
+	   while (scanner.hasNextLine()) {
+		   String binary = scanner.nextLine().trim();
+		   String text = getText(binary);
+		   writer.write(text.isEmpty() ? "?" : text); // Use "?" for unknown encodings.
+	   }
+   } catch (IOException e) {
+	   System.err.println("Error processing file: " + e.getMessage());
+   }
 	}
 
 	
